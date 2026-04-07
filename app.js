@@ -2402,9 +2402,20 @@ function renderSettings(el) {
         <!-- AI写作 -->
         <div id="sec-ai" style="display:none">
           <div class="settings-section"><div class="settings-section-title">🤖 AI服务配置</div>
-            <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);margin-bottom:16px">
-              <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                <p style="margin-bottom:8px">使用硅基流动API（<a href="https://cloud.siliconflow.cn" target="_blank" style="color:var(--primary)">前往获取</a>）提供免费额度</p>
+            <div class="settings-section"><div class="settings-section-title">API服务商</div>
+              <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+                <div style="width:100%">
+                  <div class="settings-label">选择服务商</div>
+                  <select id="aiProviderSelect" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2)" onchange="switchAIProvider(this.value)">
+                    <option value="siliconflow" ${(s.aiProvider||'siliconflow')==='siliconflow'?'selected':''}>硅基流动 SiliconFlow（推荐）</option>
+                    <option value="deepseek" ${s.aiProvider==='deepseek'?'selected':''}>DeepSeek</option>
+                    <option value="openai" ${s.aiProvider==='openai'?'selected':''}>OpenAI</option>
+                    <option value="anthropic" ${s.aiProvider==='anthropic'?'selected':''}>Anthropic Claude</option>
+                    <option value="moonshot" ${s.aiProvider==='moonshot'?'selected':''}>Moonshot Kimi</option>
+                    <option value="zhipu" ${s.aiProvider==='zhipu'?'selected':''}>智谱 GLM</option>
+                    <option value="custom" ${s.aiProvider==='custom'?'selected':''}>🔧 自定义API服务商</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div class="settings-section"><div class="settings-section-title">API配置</div>
@@ -2414,16 +2425,40 @@ function renderSettings(el) {
                   <input type="password" id="aiApiKeyInput" value="${s.aiApiKey||''}" placeholder="sk-xxxxxxxx" style="width:100%;margin-top:4px" onchange="saveSetting('aiApiKey',this.value)">
                 </div>
               </div>
-              <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
-                <div style="width:100%">
-                  <div class="settings-label">选择模型</div>
-                  <select id="aiModelSelect" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2)" onchange="saveSetting('aiModel',this.value)">
-                    <option value="deepseek-ai/DeepSeek-V3" ${(s.aiModel||'')==='deepseek-ai/DeepSeek-V3'?'selected':''}>DeepSeek V3（推荐）</option>
-                    <option value="deepseek-ai/DeepSeek-R1" ${s.aiModel==='deepseek-ai/DeepSeek-R1'?'selected':''}>DeepSeek R1（推理）</option>
-                    <option value="Qwen/Qwen2.5-72B-Instruct" ${s.aiModel==='Qwen/Qwen2.5-72B-Instruct'?'selected':''}>Qwen 72B</option>
-                    <option value="THUDM/glm-4-9b-chat" ${s.aiModel==='THUDM/glm-4-9b-chat'?'selected':''}>GLM-4</option>
-                    <option value="Pro/Qwen/Qwen2.5-7B-Instruct" ${s.aiModel==='Pro/Qwen/Qwen2.5-7B-Instruct'?'selected':''}>Qwen 7B（免费）</option>
-                  </select>
+              <div id="customApiSection" style="display:${s.aiProvider==='custom'?'block':'none'}">
+                <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px;margin-top:12px">
+                  <div style="width:100%">
+                    <div class="settings-label">API Base URL</div>
+                    <input type="text" id="customApiUrl" value="${s.customApiUrl||''}" placeholder="https://api.example.com/v1" style="width:100%;margin-top:4px" onchange="saveSetting('customApiUrl',this.value)">
+                    <div class="settings-desc" style="margin-top:4px">输入API基础地址，如：https://api.openai.com/v1</div>
+                  </div>
+                </div>
+                <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+                  <div style="width:100%">
+                    <div class="settings-label">自定义模型名称</div>
+                    <input type="text" id="customModelName" value="${s.customModelName||''}" placeholder="gpt-4o / claude-3-opus / deepseek-chat" style="width:100%;margin-top:4px" onchange="saveSetting('customModelName',this.value)">
+                    <div class="settings-desc" style="margin-top:4px">输入模型标识符，如：gpt-4o、claude-3-opus-20240229</div>
+                  </div>
+                </div>
+              </div>
+              <div id="presetModelSection" style="display:${s.aiProvider==='custom'?'none':'block'}">
+                <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+                  <div style="width:100%">
+                    <div class="settings-label">选择模型</div>
+                    <select id="aiModelSelect" style="width:100%;margin-top:4px;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg2)" onchange="saveSetting('aiModel',this.value)">
+                      <optgroup label="DeepSeek系列" id="modelGroupDeepSeek">
+                        <option value="deepseek-ai/DeepSeek-V3" ${(s.aiModel||'')==='deepseek-ai/DeepSeek-V3'?'selected':''}>DeepSeek V3（推荐）</option>
+                        <option value="deepseek-ai/DeepSeek-R1" ${s.aiModel==='deepseek-ai/DeepSeek-R1'?'selected':''}>DeepSeek R1（推理）</option>
+                      </optgroup>
+                      <optgroup label="Qwen系列" id="modelGroupQwen">
+                        <option value="Qwen/Qwen2.5-72B-Instruct" ${s.aiModel==='Qwen/Qwen2.5-72B-Instruct'?'selected':''}>Qwen 72B</option>
+                        <option value="Pro/Qwen/Qwen2.5-7B-Instruct" ${s.aiModel==='Pro/Qwen/Qwen2.5-7B-Instruct'?'selected':''}>Qwen 7B（免费）</option>
+                      </optgroup>
+                      <optgroup label="其他模型" id="modelGroupOther">
+                        <option value="THUDM/glm-4-9b-chat" ${s.aiModel==='THUDM/glm-4-9b-chat'?'selected':''}>GLM-4</option>
+                      </optgroup>
+                    </select>
+                  </div>
                 </div>
               </div>
               <div class="settings-row" style="flex-direction:column;align-items:flex-start;gap:8px">
@@ -2494,6 +2529,106 @@ function saveSetting(key, val) {
   DB.setSettings(s);
   if (key === 'theme') document.body.classList.toggle('theme-light', val === 'light');
   toast('已保存', 'success');
+}
+
+const AI_PROVIDERS = {
+  siliconflow: {
+    name: '硅基流动',
+    baseUrl: 'https://api.siliconflow.cn/v1',
+    models: [
+      { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3（推荐）' },
+      { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1（推理）' },
+      { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 72B' },
+      { id: 'Pro/Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 7B（免费）' },
+      { id: 'THUDM/glm-4-9b-chat', name: 'GLM-4' }
+    ]
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com/v1',
+    models: [
+      { id: 'deepseek-chat', name: 'DeepSeek Chat' },
+      { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner' }
+    ]
+  },
+  openai: {
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    models: [
+      { id: 'gpt-4o', name: 'GPT-4o' },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+      { id: 'gpt-4-turbo', name: 'GPT-4 Turbo' },
+      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' }
+    ]
+  },
+  anthropic: {
+    name: 'Anthropic',
+    baseUrl: 'https://api.anthropic.com/v1',
+    models: [
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+      { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
+      { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' }
+    ]
+  },
+  moonshot: {
+    name: 'Moonshot',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    models: [
+      { id: 'moonshot-v1-8k', name: 'Moonshot V1 8K' },
+      { id: 'moonshot-v1-32k', name: 'Moonshot V1 32K' },
+      { id: 'moonshot-v1-128k', name: 'Moonshot V1 128K' }
+    ]
+  },
+  zhipu: {
+    name: '智谱AI',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    models: [
+      { id: 'glm-4-plus', name: 'GLM-4 Plus' },
+      { id: 'glm-4-0520', name: 'GLM-4 0520' },
+      { id: 'glm-4-air', name: 'GLM-4 Air' },
+      { id: 'glm-4-flash', name: 'GLM-4 Flash（免费）' }
+    ]
+  },
+  custom: {
+    name: '自定义',
+    baseUrl: '',
+    models: []
+  }
+};
+
+function switchAIProvider(provider) {
+  const s = DB.getSettings();
+  s.aiProvider = provider;
+  const providerConfig = AI_PROVIDERS[provider];
+  if (providerConfig && providerConfig.baseUrl) {
+    s.aiBaseUrl = providerConfig.baseUrl;
+  }
+  if (providerConfig && providerConfig.models.length > 0) {
+    s.aiModel = providerConfig.models[0].id;
+  }
+  DB.setSettings(s);
+  
+  const customSection = document.getElementById('customApiSection');
+  const presetSection = document.getElementById('presetModelSection');
+  const modelSelect = document.getElementById('aiModelSelect');
+  
+  if (provider === 'custom') {
+    if (customSection) customSection.style.display = 'block';
+    if (presetSection) presetSection.style.display = 'none';
+  } else {
+    if (customSection) customSection.style.display = 'none';
+    if (presetSection) presetSection.style.display = 'block';
+    if (modelSelect && providerConfig) {
+      modelSelect.innerHTML = providerConfig.models.map(m => 
+        `<option value="${m.id}">${m.name}</option>`
+      ).join('');
+      if (providerConfig.models.length > 0) {
+        modelSelect.value = providerConfig.models[0].id;
+      }
+    }
+  }
+  
+  toast('已切换到 ' + (providerConfig ? providerConfig.name : '自定义'), 'success');
 }
 
 function setTheme(theme, el) {
@@ -2647,9 +2782,28 @@ async function testAIConnection() {
   
   toast('正在测试连接...', 'info');
   
-  // 本地代理服务器
+  const provider = settings.aiProvider || 'siliconflow';
+  const providerConfig = AI_PROVIDERS[provider];
+  
+  let baseUrl, model;
+  
+  if (provider === 'custom') {
+    baseUrl = settings.customApiUrl;
+    model = settings.customModelName;
+    if (!baseUrl) {
+      toast('请填写自定义API Base URL', 'warning');
+      return;
+    }
+    if (!model) {
+      toast('请填写自定义模型名称', 'warning');
+      return;
+    }
+  } else {
+    baseUrl = providerConfig ? providerConfig.baseUrl : 'https://api.siliconflow.cn/v1';
+    model = settings.aiModel || (providerConfig && providerConfig.models[0] ? providerConfig.models[0].id : 'deepseek-ai/DeepSeek-V3');
+  }
+  
   const proxyUrl = settings.aiProxyUrl || 'http://localhost:8080';
-  // GitHub Pages默认直连，本地运行可用代理
   const isLocal = window.location.hostname === 'localhost' || window.location.protocol === 'file:';
   const useProxy = settings.useAiProxy === true && isLocal;
   
@@ -2657,27 +2811,27 @@ async function testAIConnection() {
     let response;
     
     if (useProxy) {
-      // 使用代理服务器
       response = await fetch(proxyUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           apiKey: apiKey,
-          model: settings.aiModel || 'deepseek-ai/DeepSeek-V3',
+          baseUrl: baseUrl,
+          model: model,
           messages: [{ role: 'user', content: '你好' }],
           max_tokens: 50
         })
       });
     } else {
-      // 直接调用API（可能存在跨域问题）
-      response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+      const apiUrl = baseUrl.endsWith('/chat/completions') ? baseUrl : baseUrl + '/chat/completions';
+      response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + apiKey
         },
         body: JSON.stringify({
-          model: settings.aiModel || 'deepseek-ai/DeepSeek-V3',
+          model: model,
           messages: [{ role: 'user', content: '你好' }],
           max_tokens: 50
         })
@@ -2691,7 +2845,6 @@ async function testAIConnection() {
       toast('❌ 连接失败: ' + (err.error?.message || err.message || response.status), 'error');
     }
   } catch (e) {
-    // 连接代理失败，提示启动代理服务器
     if (e.message.includes('fetch') || e.message.includes('Failed to')) {
       toast('⚠️ 需要启动代理服务器。运行: python proxy_server.py', 'warning');
     } else {
@@ -2709,37 +2862,51 @@ async function callAI(messages, maxTokens = 800, temperature = 0.8) {
     throw new Error('请先在设置中配置AI API Key');
   }
   
-  // 本地代理服务器
+  const provider = settings.aiProvider || 'siliconflow';
+  const providerConfig = AI_PROVIDERS[provider];
+  
+  let baseUrl, model;
+  
+  if (provider === 'custom') {
+    baseUrl = settings.customApiUrl;
+    model = settings.customModelName;
+    if (!baseUrl || !model) {
+      throw new Error('请完善自定义API配置');
+    }
+  } else {
+    baseUrl = providerConfig ? providerConfig.baseUrl : 'https://api.siliconflow.cn/v1';
+    model = settings.aiModel || (providerConfig && providerConfig.models[0] ? providerConfig.models[0].id : 'deepseek-ai/DeepSeek-V3');
+  }
+  
   const proxyUrl = settings.aiProxyUrl || 'http://localhost:8080';
-  // GitHub Pages默认直连，本地运行可用代理
   const isLocal = window.location.hostname === 'localhost' || window.location.protocol === 'file:';
   const useProxy = settings.useAiProxy === true && isLocal;
   
   let response;
   
   if (useProxy) {
-    // 使用代理服务器
     response = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         apiKey: apiKey,
-        model: settings.aiModel || 'deepseek-ai/DeepSeek-V3',
+        baseUrl: baseUrl,
+        model: model,
         messages: messages,
         max_tokens: maxTokens,
         temperature: temperature
       })
     });
   } else {
-    // 直接调用API
-    response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+    const apiUrl = baseUrl.endsWith('/chat/completions') ? baseUrl : baseUrl + '/chat/completions';
+    response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: settings.aiModel || 'deepseek-ai/DeepSeek-V3',
+        model: model,
         messages: messages,
         max_tokens: maxTokens,
         temperature: temperature
